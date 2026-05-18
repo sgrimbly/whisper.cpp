@@ -347,6 +347,11 @@ jobs:
           key: linux-x64-cpu
 
       - name: Build whisper.cpp (CPU-only)
+        # Baseline x86-64 SIMD only (AVX1 + F16C + SSE4.2). Explicitly disable
+        # AVX2/FMA3/BMI2 so the binary runs on pre-Haswell Intel and pre-Zen AMD
+        # CPUs (e.g. AMD FX-83xx Piledriver, Sandy/Ivy Bridge). With GGML_NATIVE=OFF
+        # alone, ggml's defaults still enable AVX2+FMA+F16C, which SIGILLs on
+        # those CPUs. See OpenWhispr/openwhispr#793.
         run: |
           cmake -B build \
             -DCMAKE_BUILD_TYPE=Release \
@@ -354,6 +359,9 @@ jobs:
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -DBUILD_SHARED_LIBS=OFF \
             -DGGML_NATIVE=OFF \
+            -DGGML_AVX2=OFF \
+            -DGGML_FMA=OFF \
+            -DGGML_BMI2=OFF \
             -DGGML_CUDA=OFF
           cmake --build build --config Release -j $(nproc)
 
